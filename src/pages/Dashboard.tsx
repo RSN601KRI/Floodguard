@@ -354,6 +354,13 @@ const Dashboard = () => {
               )}
             </motion.div>
 
+            {/* Historical Charts */}
+            <HistoricalCharts
+              history={engine.history}
+              zoneNames={Object.fromEntries(engine.zones.map((z) => [z.id, z.name]))}
+              riverNames={Object.fromEntries(engine.rivers.map((r) => [r.id, r.name]))}
+            />
+
             {/* Auto Alerts */}
             <AutoAlertTicker
               isActive={simulateMode || engine.systemStatus !== 'Stable'}
