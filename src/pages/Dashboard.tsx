@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Radio, Zap, ChevronRight, Activity, Users, Droplets, Bell, Settings, TrendingUp, TrendingDown, Minus, Waves, MessageSquareWarning, PlayCircle } from 'lucide-react';
+import { AlertTriangle, Radio, Zap, ChevronRight, Activity, Users, Droplets, Bell, Settings, TrendingUp, TrendingDown, Minus, Waves, MessageSquareWarning, PlayCircle, BarChart3 } from 'lucide-react';
 import Logo from '@/components/Logo';
 import FloodMap from '@/components/FloodMap';
 import AIReasoningPanel from '@/components/AIReasoningPanel';
