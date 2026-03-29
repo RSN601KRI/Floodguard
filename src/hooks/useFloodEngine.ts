@@ -29,6 +29,7 @@ export function useFloodEngine() {
   const stateRef = useRef<OntologyState>(createInitialOntology());
   const [engineState, setEngineState] = useState<FloodEngineState>(() => {
     const initial = runPipeline(stateRef.current);
+    const firstHistory = buildHistoryEntry(1, initial);
     return {
       ontology: initial.state,
       predictions: initial.predictions,
@@ -36,6 +37,7 @@ export function useFloodEngine() {
       resources: initial.resources,
       pipelineRunCount: 1,
       isRunning: true,
+      history: [firstHistory],
     };
   });
 
