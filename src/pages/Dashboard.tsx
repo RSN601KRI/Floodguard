@@ -1,17 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Radio, Zap, ChevronRight, Activity, Users, Droplets, Bell, Settings, TrendingUp, TrendingDown, Minus, Waves, MessageSquareWarning } from 'lucide-react';
+import { AlertTriangle, Radio, Zap, ChevronRight, Activity, Users, Droplets, Bell, Settings, TrendingUp, TrendingDown, Minus, Waves, MessageSquareWarning, PlayCircle } from 'lucide-react';
 import Logo from '@/components/Logo';
 import FloodMap from '@/components/FloodMap';
+import AIReasoningPanel from '@/components/AIReasoningPanel';
+import TimelineVisualization from '@/components/TimelineVisualization';
+import PerformanceMetrics from '@/components/PerformanceMetrics';
+import AutoAlertTicker from '@/components/AutoAlertTicker';
+import DemoStoryMode from '@/components/DemoStoryMode';
 import { useFloodEngine } from '@/hooks/useFloodEngine';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [simulateMode, setSimulateMode] = useState(false);
   const [selectedZone, setSelectedZone] = useState<any>(null);
+  const [demoMode, setDemoMode] = useState(false);
 
   const engine = useFloodEngine();
+
+  // Sync simulation mode with engine
+  useEffect(() => {
+    engine.setSimulationMode(simulateMode);
+  }, [simulateMode, engine.setSimulationMode]);
 
   const statusColor = engine.systemStatus === 'Critical'
     ? 'text-destructive' : engine.systemStatus === 'Elevated'
@@ -25,7 +36,12 @@ const Dashboard = () => {
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Top Bar */}
-      <header className="flex items-center justify-between px-4 py-2.5 border-b border-border/50 glass-panel z-20">
+      <motion.header
+        initial={{ y: -40, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="flex items-center justify-between px-4 py-2.5 border-b border-border/50 glass-panel z-20"
+      >
         <div className="flex items-center gap-4">
           <Logo size="sm" />
           <div className="h-6 w-px bg-border" />
@@ -37,15 +53,26 @@ const Dashboard = () => {
             Pipeline #{engine.pipelineRunCount}
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {/* Demo Mode */}
+          <button
+            onClick={() => setDemoMode(!demoMode)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              demoMode ? 'bg-primary/20 text-primary glow-border' : 'glass-card text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <PlayCircle className="w-3.5 h-3.5" />
+            {demoMode ? 'Demo Active' : 'Demo Story'}
+          </button>
+          {/* Simulate */}
           <button
             onClick={() => setSimulateMode(!simulateMode)}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              simulateMode ? 'bg-destructive/20 text-destructive glow-border' : 'glass-card text-muted-foreground hover:text-foreground'
+              simulateMode ? 'bg-destructive/20 text-destructive glow-border animate-pulse' : 'glass-card text-muted-foreground hover:text-foreground'
             }`}
           >
             <Zap className="w-3.5 h-3.5" />
-            {simulateMode ? 'Simulation Active' : 'Simulate Flood'}
+            {simulateMode ? '⚡ Crisis Active' : 'Simulate Crisis'}
           </button>
           <button onClick={() => navigate('/alerts')} className="glass-card p-2 rounded-lg hover:text-primary transition-colors relative">
             <Bell className="w-4 h-4" />
@@ -59,12 +86,33 @@ const Dashboard = () => {
             <Settings className="w-4 h-4" />
           </button>
         </div>
-      </header>
+      </motion.header>
+
+      {/* Crisis Banner */}
+      <AnimatePresence>
+        {simulateMode && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="bg-destructive/10 border-b border-destructive/30 px-4 py-1.5 text-center overflow-hidden"
+          >
+            <span className="text-xs font-semibold text-destructive animate-pulse">
+              ⚠ CRISIS SIMULATION ACTIVE — Rainfall intensified • River levels rising • Flood scenarios triggered
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         {/* LEFT: Alerts Feed */}
-        <aside className="w-72 border-r border-border/50 flex flex-col overflow-hidden">
+        <motion.aside
+          initial={{ x: -40, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="w-72 border-r border-border/50 flex flex-col overflow-hidden"
+        >
           <div className="px-4 py-3 border-b border-border/50">
             <h2 className="text-sm font-semibold flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-warning" />
@@ -109,7 +157,7 @@ const Dashboard = () => {
               ))}
             </AnimatePresence>
           </div>
-        </aside>
+        </motion.aside>
 
         {/* CENTER: Map */}
         <main className="flex-1 relative">
@@ -118,6 +166,8 @@ const Dashboard = () => {
             onZoneSelect={(zone) => setSelectedZone(zone)}
             simulateMode={simulateMode}
           />
+
+          {/* Zone popup */}
           <AnimatePresence>
             {selectedZone && (
               <motion.div
@@ -155,10 +205,26 @@ const Dashboard = () => {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Demo Story Mode overlay */}
+          <AnimatePresence>
+            {demoMode && (
+              <DemoStoryMode
+                onStepChange={() => {}}
+                onClose={() => { setDemoMode(false); setSimulateMode(false); }}
+                onSimulateToggle={(active) => setSimulateMode(active)}
+              />
+            )}
+          </AnimatePresence>
         </main>
 
         {/* RIGHT: AI Engine */}
-        <aside className="w-80 border-l border-border/50 flex flex-col overflow-hidden">
+        <motion.aside
+          initial={{ x: 40, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="w-80 border-l border-border/50 flex flex-col overflow-hidden"
+        >
           <div className="px-4 py-3 border-b border-border/50">
             <h2 className="text-sm font-semibold flex items-center gap-2">
               <Zap className="w-4 h-4 text-primary" />
@@ -167,8 +233,18 @@ const Dashboard = () => {
             </h2>
           </div>
           <div className="flex-1 overflow-y-auto scrollbar-thin p-3 space-y-3">
+            {/* AI Reasoning */}
+            <AIReasoningPanel
+              predictions={engine.predictions}
+              evacuation={engine.evacuation}
+              pipelineRunCount={engine.pipelineRunCount}
+            />
+
+            {/* Timeline */}
+            <TimelineVisualization predictions={engine.predictions} />
+
             {/* Risk Predictions */}
-            <motion.div layout className="glass-card p-4 glow-border">
+            <motion.div layout className="glass-card p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Activity className="w-4 h-4 text-primary" />
                 <h3 className="text-sm font-semibold">Risk Prediction</h3>
@@ -196,12 +272,6 @@ const Dashboard = () => {
                     </div>
                   </div>
                 ))}
-                <div className="pt-2 border-t border-border/30 flex justify-between text-[10px]">
-                  <span className="text-muted-foreground">Avg Confidence</span>
-                  <span className="text-primary font-semibold">
-                    {Math.round(engine.predictions.reduce((s, p) => s + p.confidence, 0) / engine.predictions.length * 100)}%
-                  </span>
-                </div>
               </div>
             </motion.div>
 
@@ -227,10 +297,6 @@ const Dashboard = () => {
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">Vehicles Needed</span>
                     <span className="font-medium">{engine.evacuation.totalVehiclesNeeded}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Shelter Capacity</span>
-                    <span className="font-medium">{engine.evacuation.totalShelterCapacity.toLocaleString()}</span>
                   </div>
                   {engine.evacuation.activePlans.slice(0, 3).map((plan) => (
                     <div key={plan.zoneId} className={`text-[10px] p-2 rounded border ${
@@ -274,7 +340,6 @@ const Dashboard = () => {
                   </div>
                 ))}
               </div>
-              {/* AI Decisions */}
               {engine.resources.decisions.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-border/30 space-y-1.5">
                   <div className="text-[10px] font-semibold text-primary uppercase tracking-wider">AI Decisions</div>
@@ -287,6 +352,19 @@ const Dashboard = () => {
                 </div>
               )}
             </motion.div>
+
+            {/* Auto Alerts */}
+            <AutoAlertTicker
+              isActive={simulateMode || engine.systemStatus !== 'Stable'}
+              alerts={engine.alerts}
+            />
+
+            {/* Performance Metrics */}
+            <PerformanceMetrics
+              pipelineRunCount={engine.pipelineRunCount}
+              totalPeopleAtRisk={engine.evacuation.totalPeopleAtRisk}
+              activePlans={engine.evacuation.activePlans.length}
+            />
 
             {/* River Status */}
             <motion.div layout className="glass-card p-4">
@@ -347,7 +425,7 @@ const Dashboard = () => {
               </motion.div>
             )}
           </div>
-        </aside>
+        </motion.aside>
       </div>
     </div>
   );
