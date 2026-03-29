@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Radio, Zap, ChevronRight, Activity, Users, Droplets, Bell, Settings, TrendingUp, TrendingDown, Minus, Waves, MessageSquareWarning, PlayCircle } from 'lucide-react';
+import { AlertTriangle, Radio, Zap, ChevronRight, Activity, Users, Droplets, Bell, Settings, TrendingUp, TrendingDown, Minus, Waves, MessageSquareWarning, PlayCircle, BarChart3 } from 'lucide-react';
 import Logo from '@/components/Logo';
 import FloodMap from '@/components/FloodMap';
 import AIReasoningPanel from '@/components/AIReasoningPanel';
@@ -9,6 +9,7 @@ import TimelineVisualization from '@/components/TimelineVisualization';
 import PerformanceMetrics from '@/components/PerformanceMetrics';
 import AutoAlertTicker from '@/components/AutoAlertTicker';
 import DemoStoryMode from '@/components/DemoStoryMode';
+import HistoricalCharts from '@/components/HistoricalCharts';
 import { useFloodEngine } from '@/hooks/useFloodEngine';
 
 const Dashboard = () => {
@@ -352,6 +353,13 @@ const Dashboard = () => {
                 </div>
               )}
             </motion.div>
+
+            {/* Historical Charts */}
+            <HistoricalCharts
+              history={engine.history}
+              zoneNames={Object.fromEntries(engine.zones.map((z) => [z.id, z.name]))}
+              riverNames={Object.fromEntries(engine.rivers.map((r) => [r.id, r.name]))}
+            />
 
             {/* Auto Alerts */}
             <AutoAlertTicker
