@@ -23,7 +23,34 @@ interface FloodEngineState {
   history: HistoryEntry[];
 }
 
-const PIPELINE_INTERVAL_MS = 4000;
+const MAX_HISTORY = 30;
+
+function buildHistoryEntry(cycle: number, output: PipelineOutput): HistoryEntry {
+  const riskScores: Record<string, number> = {};
+  const rainfall: Record<string, number> = {};
+  const riverLevels: Record<string, number> = {};
+
+  for (const [id, zone] of output.state.zones) {
+    riskScores[id] = zone.riskScore;
+  }
+  for (const [id, river] of output.state.rivers) {
+    riverLevels[id] = river.currentLevel;
+  }
+  for (const [id, weather] of output.state.weather) {
+    rainfall[id] = weather.intensity;
+  }
+  // Map rainfall to zones via relationships
+  const zoneRainfall: Record<string, number> = {};
+  for (const [zoneId] of output.state.zones) {
+    const rel = output.state.relationships.riverAffectsZone.find((r) => r.zoneId === zoneId);
+    if (rel) {
+      const wRel = output.state.relationships.weatherImpactsRiver.find((w) => w.riverId === rel.riverId);
+      zoneRainfall[zoneId] = wRel ? output.state.weather.get(wRel.weatherEventId)?.intensity || 0 : 0;
+    }
+  }
+
+  return { cycle, riskScores, rainfall: zoneRainfall, riverLevels };
+}
 
 export function useFloodEngine() {
   const stateRef = useRef<OntologyState>(createInitialOntology());
