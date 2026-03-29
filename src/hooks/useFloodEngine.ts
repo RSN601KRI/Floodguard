@@ -23,6 +23,7 @@ interface FloodEngineState {
   history: HistoryEntry[];
 }
 
+const PIPELINE_INTERVAL_MS = 4000;
 const MAX_HISTORY = 30;
 
 function buildHistoryEntry(cycle: number, output: PipelineOutput): HistoryEntry {
