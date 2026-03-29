@@ -48,14 +48,20 @@ export function useFloodEngine() {
   const tick = useCallback(() => {
     const output = runPipeline(stateRef.current);
     stateRef.current = output.state;
-    setEngineState((prev) => ({
-      ontology: output.state,
-      predictions: output.predictions,
-      evacuation: output.evacuation,
-      resources: output.resources,
-      pipelineRunCount: prev.pipelineRunCount + 1,
-      isRunning: prev.isRunning,
-    }));
+    setEngineState((prev) => {
+      const cycle = prev.pipelineRunCount + 1;
+      const entry = buildHistoryEntry(cycle, output);
+      const newHistory = [...prev.history, entry].slice(-30);
+      return {
+        ontology: output.state,
+        predictions: output.predictions,
+        evacuation: output.evacuation,
+        resources: output.resources,
+        pipelineRunCount: cycle,
+        isRunning: prev.isRunning,
+        history: newHistory,
+      };
+    });
   }, []);
 
   useEffect(() => {
