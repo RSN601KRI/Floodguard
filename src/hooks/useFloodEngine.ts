@@ -6,6 +6,13 @@ import type { ZoneRiskPrediction } from '../engine/agents/riskPredictor';
 import type { EvacuationSummary } from '../engine/agents/evacuationPlanner';
 import type { ResourceAllocationResult } from '../engine/agents/resourceAllocator';
 
+export interface HistoryEntry {
+  cycle: number;
+  riskScores: Record<string, number>;
+  rainfall: Record<string, number>;
+  riverLevels: Record<string, number>;
+}
+
 interface FloodEngineState {
   ontology: OntologyState;
   predictions: ZoneRiskPrediction[];
@@ -13,6 +20,7 @@ interface FloodEngineState {
   resources: ResourceAllocationResult;
   pipelineRunCount: number;
   isRunning: boolean;
+  history: HistoryEntry[];
 }
 
 const PIPELINE_INTERVAL_MS = 4000;
