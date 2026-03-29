@@ -9,6 +9,7 @@ import TimelineVisualization from '@/components/TimelineVisualization';
 import PerformanceMetrics from '@/components/PerformanceMetrics';
 import AutoAlertTicker from '@/components/AutoAlertTicker';
 import DemoStoryMode from '@/components/DemoStoryMode';
+import HistoricalCharts from '@/components/HistoricalCharts';
 import { useFloodEngine } from '@/hooks/useFloodEngine';
 
 const Dashboard = () => {
