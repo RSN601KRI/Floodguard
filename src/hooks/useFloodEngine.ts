@@ -1,11 +1,7 @@
-/**
- * useFloodEngine — React hook that runs the full data pipeline
- * on an interval and exposes live ontology state + AI outputs to the UI.
- */
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createInitialOntology, type OntologyState } from '../engine/ontology';
 import { runPipeline, type PipelineOutput } from '../engine/pipeline';
+import { setCrisisMode } from '../engine/dataSources';
 import type { ZoneRiskPrediction } from '../engine/agents/riskPredictor';
 import type { EvacuationSummary } from '../engine/agents/evacuationPlanner';
 import type { ResourceAllocationResult } from '../engine/agents/resourceAllocator';
@@ -19,7 +15,7 @@ interface FloodEngineState {
   isRunning: boolean;
 }
 
-const PIPELINE_INTERVAL_MS = 4000; // every 4 seconds
+const PIPELINE_INTERVAL_MS = 4000;
 
 export function useFloodEngine() {
   const stateRef = useRef<OntologyState>(createInitialOntology());
@@ -34,6 +30,10 @@ export function useFloodEngine() {
       isRunning: true,
     };
   });
+
+  const setSimulationMode = useCallback((active: boolean) => {
+    setCrisisMode(active);
+  }, []);
 
   const tick = useCallback(() => {
     const output = runPipeline(stateRef.current);
@@ -53,7 +53,6 @@ export function useFloodEngine() {
     return () => clearInterval(interval);
   }, [tick]);
 
-  // Derived convenience data for UI
   const zones = Array.from(engineState.ontology.zones.values()).map((zone) => ({
     ...zone,
     risk: zone.riskLevel === 'high' ? 'high' as const : zone.riskLevel === 'medium' ? 'moderate' as const : 'safe' as const,
@@ -71,7 +70,6 @@ export function useFloodEngine() {
   }));
 
   const alerts = engineState.ontology.alerts.map((a) => {
-    const zone = engineState.ontology.zones.get(a.zoneId);
     const timeDiff = Date.now() - a.timestamp;
     const timeStr = timeDiff < 60000 ? `${Math.round(timeDiff / 1000)}s ago`
       : timeDiff < 3600000 ? `${Math.round(timeDiff / 60000)} min ago`
@@ -100,5 +98,6 @@ export function useFloodEngine() {
     systemStatus,
     rivers: Array.from(engineState.ontology.rivers.values()),
     socialSignals: engineState.ontology.socialSignals,
+    setSimulationMode,
   };
 }

@@ -12,6 +12,12 @@ const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(ma
 let idCounter = 0;
 const uid = (prefix: string) => `${prefix}-${++idCounter}-${Date.now().toString(36)}`;
 
+// ─── CRISIS MULTIPLIER ─────────────────────────────────────────
+
+let crisisMode = false;
+export function setCrisisMode(active: boolean) { crisisMode = active; }
+export function getCrisisMode() { return crisisMode; }
+
 // ─── WEATHER API SIMULATION ────────────────────────────────────
 
 const weatherProfiles: Record<string, { baseIntensity: number; volatility: number }> = {
@@ -22,8 +28,9 @@ const weatherProfiles: Record<string, { baseIntensity: number; volatility: numbe
 };
 
 export function generateWeatherEvents(): WeatherEvent[] {
+  const crisisBoost = crisisMode ? 1.8 : 1;
   return Object.entries(weatherProfiles).map(([id, profile]) => {
-    const intensity = clamp(jitter(profile.baseIntensity, profile.volatility), 0, 150);
+    const intensity = clamp(jitter(profile.baseIntensity * crisisBoost, profile.volatility), 0, 150);
     return {
       id,
       type: intensity > 100 ? 'cloudburst' : intensity > 60 ? 'storm' : 'rainfall',
@@ -42,9 +49,9 @@ export function updateRiverSensor(
   river: RiverEntity,
   upstreamRainfall: number
 ): RiverEntity {
-  // River level changes based on upstream rainfall with damping
-  const rainfallEffect = (upstreamRainfall / 100) * 0.3;
-  const naturalDrift = (Math.random() - 0.48) * 0.15; // slight upward bias
+  const crisisBoost = crisisMode ? 1.6 : 1;
+  const rainfallEffect = (upstreamRainfall / 100) * 0.3 * crisisBoost;
+  const naturalDrift = (Math.random() - (crisisMode ? 0.3 : 0.48)) * 0.15;
   const newLevel = clamp(
     river.currentLevel + rainfallEffect + naturalDrift,
     1.0,
@@ -75,7 +82,7 @@ export function generateSatelliteData(zoneId: string, riskScore: number): Satell
     waterExtentKm2: Math.round(clamp(baseExtent, 0, 120) * 10) / 10,
     changePercent: Math.round(jitter(riskScore > 50 ? 15 : -2, 10) * 10) / 10,
     cloudCover: clamp(jitter(0.4, 0.3), 0, 1),
-    captureTime: Date.now() - Math.round(Math.random() * 3600000), // within last hour
+    captureTime: Date.now() - Math.round(Math.random() * 3600000),
     resolution: '10m',
   };
 }
@@ -93,9 +100,12 @@ const socialTemplates = [
 ];
 
 export function generateSocialSignals(zoneNames: string[], count = 2): SocialSignal[] {
+  const effectiveCount = crisisMode ? count + 2 : count;
   const signals: SocialSignal[] = [];
-  for (let i = 0; i < count; i++) {
-    const template = socialTemplates[Math.floor(Math.random() * socialTemplates.length)];
+  for (let i = 0; i < effectiveCount; i++) {
+    const template = crisisMode
+      ? socialTemplates.filter((t) => t.sentiment === 'alarm')[Math.floor(Math.random() * 4)]
+      : socialTemplates[Math.floor(Math.random() * socialTemplates.length)];
     const zone = zoneNames[Math.floor(Math.random() * zoneNames.length)];
     signals.push({
       id: uid('social'),
