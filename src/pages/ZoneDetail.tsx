@@ -35,13 +35,11 @@ const ZoneDetail = () => {
   const riskBg = zone.riskLevel === 'high' ? 'bg-risk-high' : zone.riskLevel === 'medium' ? 'bg-risk-moderate' : 'bg-risk-safe';
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="flex items-center gap-4 px-6 py-4 border-b border-border/50">
+    <div className="h-full overflow-y-auto scrollbar-thin">
+      <header className="flex items-center gap-4 px-6 py-3 border-b border-border/50">
         <button onClick={() => navigate('/dashboard')} className="glass-card p-2 rounded-lg hover:text-primary transition-colors">
           <ArrowLeft className="w-4 h-4" />
         </button>
-        <Logo size="sm" />
-        <div className="h-5 w-px bg-border" />
         <h1 className="text-sm font-semibold">Zone Detail</h1>
         <span className="ml-auto text-[10px] text-muted-foreground font-mono animate-pulse">LIVE • Pipeline #{engine.pipelineRunCount}</span>
       </header>
