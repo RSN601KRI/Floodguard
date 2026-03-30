@@ -228,18 +228,34 @@ const ZoneDetail = () => {
 
         <motion.div variants={fadeUp} className="flex gap-3">
           <button
+            onClick={() => setConfirmEvac(true)}
+            className="flex-1 py-3 rounded-xl bg-destructive/10 text-destructive font-medium text-sm hover:bg-destructive/20 transition-colors border border-destructive/20"
+          >
+            Approve Evacuation
+          </button>
+          <button
             onClick={() => navigate('/alerts')}
             className="flex-1 py-3 rounded-xl bg-primary/10 text-primary font-medium text-sm hover:bg-primary/20 transition-colors glow-border"
           >
-            Send Alerts for This Zone
+            Send Alerts
           </button>
           <button
             onClick={() => navigate('/dashboard')}
             className="px-6 py-3 rounded-xl glass-card text-sm font-medium hover:text-primary transition-colors"
           >
-            Back to Map
+            Back
           </button>
         </motion.div>
+
+        <ConfirmDialog
+          open={confirmEvac}
+          onOpenChange={setConfirmEvac}
+          title="Approve Evacuation"
+          description={`Are you sure you want to approve evacuation for ${zone.name}? This will trigger alerts to all residents and deploy emergency resources.`}
+          confirmLabel="Approve Evacuation"
+          variant="destructive"
+          onConfirm={() => { setConfirmEvac(false); navigate('/alerts'); }}
+        />
       </motion.div>
     </div>
   );
