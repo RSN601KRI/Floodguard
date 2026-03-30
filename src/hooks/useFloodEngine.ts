@@ -19,12 +19,10 @@ interface FloodEngineState {
   evacuation: EvacuationSummary;
   resources: ResourceAllocationResult;
   pipelineRunCount: number;
-  isRunning: boolean;
   history: HistoryEntry[];
 }
 
 const PIPELINE_INTERVAL_MS = 4000;
-const MAX_HISTORY = 30;
 
 function buildHistoryEntry(cycle: number, output: PipelineOutput): HistoryEntry {
   const riskScores: Record<string, number> = {};
@@ -37,10 +35,6 @@ function buildHistoryEntry(cycle: number, output: PipelineOutput): HistoryEntry 
   for (const [id, river] of output.state.rivers) {
     riverLevels[id] = river.currentLevel;
   }
-  for (const [id, weather] of output.state.weather) {
-    rainfall[id] = weather.intensity;
-  }
-  // Map rainfall to zones via relationships
   const zoneRainfall: Record<string, number> = {};
   for (const [zoneId] of output.state.zones) {
     const rel = output.state.relationships.riverAffectsZone.find((r) => r.zoneId === zoneId);
@@ -53,7 +47,11 @@ function buildHistoryEntry(cycle: number, output: PipelineOutput): HistoryEntry 
   return { cycle, riskScores, rainfall: zoneRainfall, riverLevels };
 }
 
-export function useFloodEngine() {
+/**
+ * @param running - whether the pipeline should be actively ticking
+ * @param crisisMode - whether crisis multipliers should be applied
+ */
+export function useFloodEngine(running: boolean = true, crisisMode: boolean = false) {
   const stateRef = useRef<OntologyState>(createInitialOntology());
   const [engineState, setEngineState] = useState<FloodEngineState>(() => {
     const initial = runPipeline(stateRef.current);
@@ -64,14 +62,14 @@ export function useFloodEngine() {
       evacuation: initial.evacuation,
       resources: initial.resources,
       pipelineRunCount: 1,
-      isRunning: true,
       history: [firstHistory],
     };
   });
 
-  const setSimulationMode = useCallback((active: boolean) => {
-    setCrisisMode(active);
-  }, []);
+  // Sync crisis mode
+  useEffect(() => {
+    setCrisisMode(crisisMode);
+  }, [crisisMode]);
 
   const tick = useCallback(() => {
     const output = runPipeline(stateRef.current);
@@ -86,16 +84,31 @@ export function useFloodEngine() {
         evacuation: output.evacuation,
         resources: output.resources,
         pipelineRunCount: cycle,
-        isRunning: prev.isRunning,
         history: newHistory,
       };
     });
   }, []);
 
+  const reset = useCallback(() => {
+    setCrisisMode(false);
+    const fresh = createInitialOntology();
+    stateRef.current = fresh;
+    const initial = runPipeline(fresh);
+    setEngineState({
+      ontology: initial.state,
+      predictions: initial.predictions,
+      evacuation: initial.evacuation,
+      resources: initial.resources,
+      pipelineRunCount: 1,
+      history: [buildHistoryEntry(1, initial)],
+    });
+  }, []);
+
   useEffect(() => {
+    if (!running) return;
     const interval = setInterval(tick, PIPELINE_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [tick]);
+  }, [tick, running]);
 
   const zones = Array.from(engineState.ontology.zones.values()).map((zone) => ({
     ...zone,
@@ -142,6 +155,6 @@ export function useFloodEngine() {
     systemStatus,
     rivers: Array.from(engineState.ontology.rivers.values()),
     socialSignals: engineState.ontology.socialSignals,
-    setSimulationMode,
+    reset,
   };
 }
