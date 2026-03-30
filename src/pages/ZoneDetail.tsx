@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Users, Activity, Clock, Droplets, CloudRain, Shield, FileText, AlertTriangle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import Logo from '@/components/Logo';
 import { useFloodEngine } from '@/hooks/useFloodEngine';
+import { useAppContext } from '@/contexts/AppContext';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -12,7 +14,9 @@ const fadeUp = {
 const ZoneDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const engine = useFloodEngine();
+  const { systemState } = useAppContext();
+  const engine = useFloodEngine(systemState !== 'standby', systemState === 'crisis');
+  const [confirmEvac, setConfirmEvac] = useState(false);
 
   const zone = engine.zones.find((z) => z.id === id);
   const prediction = engine.predictions.find((p) => p.zoneId === id);
@@ -22,7 +26,7 @@ const ZoneDetail = () => {
 
   if (!zone) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="h-full flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-xl font-semibold mb-2">Zone not found</h2>
           <button onClick={() => navigate('/dashboard')} className="text-primary text-sm">Back to Dashboard</button>
@@ -71,19 +75,12 @@ const ZoneDetail = () => {
               <p className="text-sm text-muted-foreground">Zone ID: {zone.id} • {zone.district}, Bihar</p>
             </div>
             <div className="text-right">
-              <motion.div
-                key={zone.riskScore}
-                initial={{ scale: 1.2 }}
-                animate={{ scale: 1 }}
-                className={`text-4xl font-bold font-mono ${riskClass}`}
-              >
+              <motion.div key={zone.riskScore} initial={{ scale: 1.2 }} animate={{ scale: 1 }} className={`text-4xl font-bold font-mono ${riskClass}`}>
                 {zone.riskScore}
               </motion.div>
               <div className="text-xs text-muted-foreground">Risk Score</div>
               {prediction && (
-                <div className="text-[10px] text-primary mt-1">
-                  Confidence: {Math.round(prediction.confidence * 100)}%
-                </div>
+                <div className="text-[10px] text-primary mt-1">Confidence: {Math.round(prediction.confidence * 100)}%</div>
               )}
             </div>
           </div>
@@ -99,12 +96,7 @@ const ZoneDetail = () => {
           ].map((stat) => (
             <motion.div key={stat.label} variants={fadeUp} className="glass-card p-4 text-center">
               <stat.icon className={`w-5 h-5 mx-auto mb-2 ${stat.color}`} />
-              <motion.div
-                key={stat.value}
-                initial={{ opacity: 0.5 }}
-                animate={{ opacity: 1 }}
-                className={`text-xl font-bold font-mono ${stat.color}`}
-              >
+              <motion.div key={stat.value} initial={{ opacity: 0.5 }} animate={{ opacity: 1 }} className={`text-xl font-bold font-mono ${stat.color}`}>
                 {stat.value}
               </motion.div>
               <div className="text-xs text-muted-foreground mt-1">{stat.label}</div>
@@ -122,11 +114,8 @@ const ZoneDetail = () => {
             <div className="grid grid-cols-5 gap-3">
               {Object.entries(prediction.breakdown).map(([key, value]) => {
                 const labels: Record<string, string> = {
-                  riverComponent: 'River Threat',
-                  rainfallComponent: 'Rainfall',
-                  satelliteComponent: 'Satellite',
-                  socialComponent: 'Social Intel',
-                  historicalComponent: 'Historical',
+                  riverComponent: 'River Threat', rainfallComponent: 'Rainfall', satelliteComponent: 'Satellite',
+                  socialComponent: 'Social Intel', historicalComponent: 'Historical',
                 };
                 return (
                   <div key={key} className="text-center">
@@ -134,14 +123,10 @@ const ZoneDetail = () => {
                     <div className="relative w-12 h-12 mx-auto mb-1">
                       <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
                         <circle cx="18" cy="18" r="14" fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
-                        <motion.circle
-                          cx="18" cy="18" r="14" fill="none"
+                        <motion.circle cx="18" cy="18" r="14" fill="none"
                           stroke={value > 60 ? 'hsl(var(--destructive))' : value > 30 ? 'hsl(var(--warning))' : 'hsl(var(--primary))'}
-                          strokeWidth="3"
-                          strokeDasharray={`${value * 0.88} 88`}
-                          strokeLinecap="round"
-                          animate={{ strokeDasharray: `${value * 0.88} 88` }}
-                          transition={{ duration: 1 }}
+                          strokeWidth="3" strokeDasharray={`${value * 0.88} 88`} strokeLinecap="round"
+                          animate={{ strokeDasharray: `${value * 0.88} 88` }} transition={{ duration: 1 }}
                         />
                       </svg>
                       <span className="absolute inset-0 flex items-center justify-center text-[10px] font-mono font-bold">{value}</span>
@@ -159,7 +144,6 @@ const ZoneDetail = () => {
             <Shield className="w-5 h-5 text-primary" />
             <h3 className="text-lg font-semibold">AI-Generated Action Plan</h3>
           </div>
-
           {zone.riskLevel === 'low' && !evacPlan ? (
             <div className="text-sm text-muted-foreground p-4 rounded-lg bg-success/5 border border-success/20">
               <p className="risk-safe font-medium mb-1">✓ No immediate action required</p>
@@ -168,11 +152,7 @@ const ZoneDetail = () => {
           ) : (
             <div className="space-y-3">
               {evacPlan && (
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="p-3 rounded-lg border bg-destructive/5 border-destructive/20"
-                >
+                <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="p-3 rounded-lg border bg-destructive/5 border-destructive/20">
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-destructive" />
                     <div>
@@ -188,12 +168,7 @@ const ZoneDetail = () => {
                 </motion.div>
               )}
               {resourceDeploy && (
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="p-3 rounded-lg border glass-card"
-                >
+                <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }} className="p-3 rounded-lg border glass-card">
                   <div className="flex items-start gap-3">
                     <FileText className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
                     <div>
